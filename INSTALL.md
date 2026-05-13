@@ -1,5 +1,11 @@
 ## Installation
 
+### Stable Cloud Setup (recommended for training)
+
+For a stable cloud training stack (Python 3.10 + PyTorch 2.2.2 cu121), see:
+
+- `docs/env_setup_cloud.md`
+
 ### Requirements
 - Linux or macOS with Python ≥ 3.6
 - PyTorch ≥ 1.9 and [torchvision](https://github.com/pytorch/vision/) that matches the PyTorch installation.

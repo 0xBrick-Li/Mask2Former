@@ -1,0 +1,27 @@
+_BASE_: ../../../ade20k/semantic-segmentation/swin/maskformer2_swin_base_IN21k_384_bs16_160k_res640.yaml
+
+MODEL:
+  WEIGHTS: "checkpoints/model_final_f6e0f6.pkl"
+  SEM_SEG_HEAD:
+    NUM_CLASSES: 2
+  SWIN:
+    EMBED_DIM: 128
+    DEPTHS: [2, 2, 18, 2]
+    NUM_HEADS: [4, 8, 16, 32]
+    WINDOW_SIZE: 12
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    PRETRAIN_IMG_SIZE: 384
+    # Swin freeze behavior in this repo:
+    # - patch_embed freezes when FROZEN_STAGES >= 0
+    # - stage i freezes in loop range(0, FROZEN_STAGES - 1)
+    # For 4 stages, set 5 to freeze all backbone stages.
+    FROZEN_STAGES: 5
+
+DATASETS:
+  TRAIN: ("hrc_whu_sem_seg_train",)
+  TEST: ("hrc_whu_sem_seg_val",)
+
+INPUT:
+  DATASET_MAPPER_NAME: "mask_former_semantic"

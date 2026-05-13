@@ -704,6 +704,7 @@ class D2SwinTransformer(SwinTransformer, Backbone):
         ape = cfg.MODEL.SWIN.APE
         patch_norm = cfg.MODEL.SWIN.PATCH_NORM
         use_checkpoint = cfg.MODEL.SWIN.USE_CHECKPOINT
+        frozen_stages = cfg.MODEL.SWIN.FROZEN_STAGES
 
         super().__init__(
             pretrain_img_size,
@@ -722,6 +723,7 @@ class D2SwinTransformer(SwinTransformer, Backbone):
             norm_layer,
             ape,
             patch_norm,
+            frozen_stages=frozen_stages,
             use_checkpoint=use_checkpoint,
         )
 

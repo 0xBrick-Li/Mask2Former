@@ -1,0 +1,5 @@
+# Base project dependencies
+-r ../requirements.txt
+
+# Optional but commonly used for visualization/demo
+opencv-python
