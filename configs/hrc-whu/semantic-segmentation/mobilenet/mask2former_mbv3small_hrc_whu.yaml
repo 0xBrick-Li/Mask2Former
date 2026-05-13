@@ -1,0 +1,19 @@
+_BASE_: ../swin/mask2former_swin_base_hrc_whu.yaml
+
+MODEL:
+  BACKBONE:
+    NAME: "D2MobileNetV3Small"
+  WEIGHTS: ""
+  SEM_SEG_HEAD:
+    NUM_CLASSES: 2
+  MOBILENET:
+    MODEL_NAME: "mobilenetv3_small_100"
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+    PRETRAINED: False
+
+DATASETS:
+  TRAIN: ("hrc_whu_sem_seg_train",)
+  TEST: ("hrc_whu_sem_seg_val",)
+
+INPUT:
+  DATASET_MAPPER_NAME: "mask_former_semantic"

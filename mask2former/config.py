@@ -90,6 +90,12 @@ def add_maskformer2_config(cfg):
     cfg.MODEL.SWIN.USE_CHECKPOINT = False
     cfg.MODEL.SWIN.FROZEN_STAGES = -1
 
+    # mobilenet backbone
+    cfg.MODEL.MOBILENET = CN()
+    cfg.MODEL.MOBILENET.MODEL_NAME = "mobilenetv3_small_100"
+    cfg.MODEL.MOBILENET.OUT_FEATURES = ["res2", "res3", "res4", "res5"]
+    cfg.MODEL.MOBILENET.PRETRAINED = False
+
     # NOTE: maskformer2 extra configs
     # transformer module
     cfg.MODEL.MASK_FORMER.TRANSFORMER_DECODER_NAME = "MultiScaleMaskedTransformerDecoder"
