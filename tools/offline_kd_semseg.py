@@ -55,6 +55,8 @@ def add_distill_config(cfg):
     cfg.DISTILL.SAVE_DTYPE = "float16"  # float16 or float32
     cfg.DISTILL.DATASET_SPLITS = ["train", "val"]
     cfg.DISTILL.NO_RANDOM_AUG = True
+    cfg.DISTILL.RESET_ITER = True
+    cfg.DISTILL.STRICT_ALIGN = True
 
 
 def setup(args):
@@ -305,6 +307,43 @@ def _prepare_manifest_lookup(cfg) -> Dict[str, Dict]:
     return lookup
 
 
+def _preflight_alignment_check(manifest_lookup: Dict[str, Dict], sample_batch: List[Dict]):
+    """
+    Check alignment before training to fail fast with actionable error.
+    """
+    missing = []
+    mismatch = []
+    for sample in sample_batch:
+        distill_id = sample["distill_id"]
+        if distill_id not in manifest_lookup:
+            missing.append(sample["file_name"])
+            continue
+        rec = manifest_lookup[distill_id]
+        h, w = int(sample["height"]), int(sample["width"])
+        if int(rec["height"]) != h or int(rec["width"]) != w:
+            mismatch.append(
+                {
+                    "file_name": sample["file_name"],
+                    "student_hw": [h, w],
+                    "teacher_hw": [int(rec["height"]), int(rec["width"])],
+                    "logits_relpath": rec["logits_relpath"],
+                }
+            )
+    if missing:
+        raise KeyError(
+            "Manifest missing teacher logits for some samples, first 3: "
+            + ", ".join(missing[:3])
+        )
+    if mismatch:
+        m = mismatch[0]
+        raise ValueError(
+            "Teacher/student size mismatch in preflight check. "
+            f"file={m['file_name']} student_hw={m['student_hw']} teacher_hw={m['teacher_hw']} "
+            f"logits={m['logits_relpath']}. "
+            "Ensure export_logits and train_kd use identical INPUT.{MIN/MAX_SIZE_TRAIN, SIZE_DIVISIBILITY}."
+        )
+
+
 def _compute_student_forward(base_model, batched_inputs):
     images = [x["image"].to(base_model.device) for x in batched_inputs]
     images = [(x - base_model.pixel_mean) / base_model.pixel_std for x in images]
@@ -377,7 +416,14 @@ def do_train_kd(cfg, resume=False):
     optimizer = _build_optimizer(cfg, model)
     scheduler = _build_scheduler(cfg, optimizer)
     checkpointer = DetectionCheckpointer(model, cfg.OUTPUT_DIR, optimizer=optimizer, scheduler=scheduler)
-    start_iter = checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=resume).get("iteration", -1) + 1
+    if resume:
+        start_iter = checkpointer.resume_or_load(cfg.MODEL.WEIGHTS, resume=True).get("iteration", -1) + 1
+    else:
+        # Load model weights only, reset optimizer/scheduler/iteration for KD phase.
+        DetectionCheckpointer(model).load(cfg.MODEL.WEIGHTS)
+        start_iter = 0 if cfg.DISTILL.RESET_ITER else checkpointer.resume_or_load(
+            cfg.MODEL.WEIGHTS, resume=False
+        ).get("iteration", -1) + 1
     max_iter = cfg.SOLVER.MAX_ITER
     periodic_checkpointer = PeriodicCheckpointer(checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_iter=max_iter)
 
@@ -388,6 +434,10 @@ def do_train_kd(cfg, resume=False):
 
     train_loader = build_detection_train_loader(cfg, mapper=DeterministicSemanticTrainMapper(cfg))
     data_iter = iter(train_loader)
+    first_batch = next(data_iter)
+    if cfg.DISTILL.STRICT_ALIGN:
+        _preflight_alignment_check(manifest_lookup, first_batch)
+    # Continue training from the next batches after preflight.
     writers = default_writers(cfg.OUTPUT_DIR, max_iter)
 
     logger.info(
@@ -402,7 +452,10 @@ def do_train_kd(cfg, resume=False):
         for iteration in range(start_iter, max_iter):
             storage.iter = iteration
             iter_start = time.perf_counter()
-            data = next(data_iter)
+            if iteration == start_iter:
+                data = first_batch
+            else:
+                data = next(data_iter)
             data_time = time.perf_counter() - iter_start
 
             base_model = model.module if hasattr(model, "module") else model

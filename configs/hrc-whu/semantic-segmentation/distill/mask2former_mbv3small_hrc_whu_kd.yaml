@@ -16,6 +16,8 @@ DISTILL:
   SAVE_DTYPE: "float16"
   DATASET_SPLITS: ["train", "val"]
   NO_RANDOM_AUG: True
+  RESET_ITER: True
+  STRICT_ALIGN: True
 
 INPUT:
   # Keep deterministic pipeline for strict teacher-student alignment.
