@@ -1,0 +1,24 @@
+_BASE_: ../mobilenet/mask2former_mbv3small_hrc_whu.yaml
+
+MODEL:
+  # Student init checkpoint. Override from CLI if needed.
+  WEIGHTS: ""
+
+DISTILL:
+  ENABLED: True
+  # Teacher final checkpoint (Swin-B). Override from CLI if needed.
+  TEACHER_WEIGHTS: ""
+  # Root directory that stores exported logits and manifest.
+  LOGITS_ROOT: "output/hrc_whu_kd/logits"
+  MANIFEST_PATH: "output/hrc_whu_kd/logits/manifest.json"
+  TEMPERATURE: 1.0
+  KD_WEIGHT: 1.0
+  SAVE_DTYPE: "float16"
+  DATASET_SPLITS: ["train", "val"]
+  NO_RANDOM_AUG: True
+
+INPUT:
+  # Keep deterministic pipeline for strict teacher-student alignment.
+  CROP:
+    ENABLED: False
+  COLOR_AUG_SSD: False
