@@ -161,6 +161,7 @@ class DeterministicSemanticEvalMapper:
         dataset_dict = copy.deepcopy(dataset_dict)
         image = utils.read_image(dataset_dict["file_name"], format=self.img_format)
         utils.check_image_size(dataset_dict, image)
+        orig_h, orig_w = image.shape[:2]
         aug_input = T.AugInput(image)
         aug_input, _ = T.apply_transform_gens([self.resize_aug], aug_input)
         image = aug_input.image
@@ -174,8 +175,9 @@ class DeterministicSemanticEvalMapper:
             image = F.pad(image, padding_size, value=128).contiguous()
 
         dataset_dict["image"] = image
-        dataset_dict["height"] = int(image.shape[-2])
-        dataset_dict["width"] = int(image.shape[-1])
+        # Keep original size so evaluator can compare prediction with original GT resolution.
+        dataset_dict["height"] = int(orig_h)
+        dataset_dict["width"] = int(orig_w)
         dataset_dict["distill_id"] = _stable_id(dataset_dict["file_name"])
         return dataset_dict
 
