@@ -15,7 +15,7 @@ def register_all_hrc_whu_sem_seg(root):
     root = os.path.join(root, "HRC_WHU")
     meta = _get_hrc_whu_meta()
 
-    for split in ["train", "val"]:
+    for split in ["train", "val", "test"]:
         image_dir = os.path.join(root, "img_dir", split)
         gt_dir = os.path.join(root, "ann_dir", split)
         name = f"hrc_whu_sem_seg_{split}"
