@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 import os
+import sys
 import time
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
@@ -32,6 +33,12 @@ from detectron2.structures import BitMasks, ImageList, Instances
 from detectron2.utils.events import EventStorage
 from detectron2.utils.file_io import PathManager
 from detectron2.utils.logger import setup_logger
+
+# Ensure repo root is importable when running from tools/ directly.
+_CUR_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_ROOT = os.path.dirname(_CUR_DIR)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 from mask2former import add_maskformer2_config
 from train_net import Trainer as BaseTrainer
